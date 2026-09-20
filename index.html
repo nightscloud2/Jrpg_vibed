@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>The Tribute Grid</title>
-    <script src="https://jsdelivr.net"></script>
-    <style> body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; } </style>
+    <!-- Loaded valid Phaser 3 CDN script -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style> 
+        body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; } 
+    </style>
 </head>
 <body>
 <script>
@@ -13,7 +16,7 @@
         width: 320, // Low resolution for authentic 16-bit retro crunch
         height: 240,
         zoom: 3,    // Scale it up perfectly for high-res screens/tablets
-        pixelArt: true, // Crucial! Keeps your pixel art sharp, not blurry
+        pixelArt: true, // Keeps your pixel art sharp, not blurry
         physics: { default: 'arcade', arcade: { gravity: { y: 0 } } },
         scene: { preload: preload, create: create, update: update }
     };
@@ -23,28 +26,33 @@
     let cursors;
 
     function preload() {
-        // Placeholder sprite box until you inject actual pixel art sheets
-        this.load.image('hero', 'https://phaser.io');
+        // External assets can be preloaded here once hosted on GitHub
     }
 
     function create() {
+        // Generate a 16x16 red square sprite directly in memory to avoid asset load errors
+        const graphic = this.make.graphics({ x: 0, y: 0, add: false });
+        graphic.fillStyle(0xff0000, 1);
+        graphic.fillRect(0, 0, 16, 16);
+        graphic.generateTexture('hero', 16, 16);
+
         // Spawn our hero in the center of the screen
         player = this.physics.add.sprite(160, 120, 'hero');
         player.setCollideWorldBounds(true);
 
-        // Configure input listener for keyboard arrows/d-pad
+        // Configure input listener for keyboard arrows
         cursors = this.input.keyboard.createCursorKeys();
     }
 
     function update() {
-        // Reset velocity every frame for tight, grid-like movement feel
+        // Reset velocity every frame
         player.setVelocity(0);
 
         if (cursors.left.isDown) { player.setVelocityX(-100); }
         else if (cursors.right.isDown) { player.setVelocityX(100); }
 
         if (cursors.up.isDown) { player.setVelocityY(-100); }
-        else if (cursors.down.isDown) { player.setVelocityY(-100); }
+        else if (cursors.down.isDown) { player.setVelocityY(100); } // Fixed Y velocity direction
     }
 </script>
 </body>
