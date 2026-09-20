@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Tribute Grid</title>
+    <script src="https://jsdelivr.net"></script>
+    <style> body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; } </style>
+</head>
+<body>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 320, // Low resolution for authentic 16-bit retro crunch
+        height: 240,
+        zoom: 3,    // Scale it up perfectly for high-res screens/tablets
+        pixelArt: true, // Crucial! Keeps your pixel art sharp, not blurry
+        physics: { default: 'arcade', arcade: { gravity: { y: 0 } } },
+        scene: { preload: preload, create: create, update: update }
+    };
+
+    const game = new Phaser.Game(config);
+    let player;
+    let cursors;
+
+    function preload() {
+        // Placeholder sprite box until you inject actual pixel art sheets
+        this.load.image('hero', 'https://phaser.io');
+    }
+
+    function create() {
+        // Spawn our hero in the center of the screen
+        player = this.physics.add.sprite(160, 120, 'hero');
+        player.setCollideWorldBounds(true);
+
+        // Configure input listener for keyboard arrows/d-pad
+        cursors = this.input.keyboard.createCursorKeys();
+    }
+
+    function update() {
+        // Reset velocity every frame for tight, grid-like movement feel
+        player.setVelocity(0);
+
+        if (cursors.left.isDown) { player.setVelocityX(-100); }
+        else if (cursors.right.isDown) { player.setVelocityX(100); }
+
+        if (cursors.up.isDown) { player.setVelocityY(-100); }
+        else if (cursors.down.isDown) { player.setVelocityY(-100); }
+    }
+</script>
+</body>
+</html>
