@@ -27,46 +27,6 @@
 </head>
 <body>
 <script>
-    // Generate Base64 Data URIs synchronously before Phaser boots
-    function makeDataURI(w, h, draw) {
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const ctx = c.getContext('2d');
-        draw(ctx);
-        return c.toDataURL();
-    }
-
-    // 1. Tileset Texture (48x16)
-    const tilesetURI = makeDataURI(48, 16, (ctx) => {
-        // Grass (Tile 0)
-        ctx.fillStyle = '#388e3c'; ctx.fillRect(0, 0, 16, 16);
-        ctx.fillStyle = '#4caf50'; ctx.fillRect(2, 3, 2, 2); ctx.fillRect(10, 9, 2, 2); ctx.fillRect(6, 12, 2, 2);
-        // Stone Wall (Tile 1)
-        ctx.fillStyle = '#424242'; ctx.fillRect(16, 0, 16, 16);
-        ctx.fillStyle = '#757575'; ctx.fillRect(17, 1, 14, 6); ctx.fillRect(17, 8, 6, 7); ctx.fillRect(24, 8, 7, 7);
-        // Dirt Path (Tile 2)
-        ctx.fillStyle = '#795548'; ctx.fillRect(32, 0, 16, 16);
-        ctx.fillStyle = '#5d4037'; ctx.fillRect(34, 4, 2, 2); ctx.fillRect(42, 10, 2, 2); ctx.fillRect(38, 13, 2, 2);
-    });
-
-    // 2. High-Contrast Hero Sprite (16x16)
-    const heroURI = makeDataURI(16, 16, (ctx) => {
-        ctx.fillStyle = '#ff1744'; ctx.fillRect(2, 0, 12, 5);  // Bright Red Hat
-        ctx.fillStyle = '#ffea00'; ctx.fillRect(3, 4, 10, 5);  // Yellow Face
-        ctx.fillStyle = '#000000'; ctx.fillRect(4, 6, 2, 2); ctx.fillRect(10, 6, 2, 2); // Eyes
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(2, 9, 12, 4);  // White Shirt
-        ctx.fillStyle = '#2979ff'; ctx.fillRect(3, 13, 4, 3); ctx.fillRect(9, 13, 4, 3); // Blue Legs
-    });
-
-    // 3. UI Touch Button Texture (32x32)
-    const btnURI = makeDataURI(32, 32, (ctx) => {
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.fillRect(0, 0, 32, 32);
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(1, 1, 30, 30);
-    });
-
     const config = {
         type: Phaser.AUTO,
         width: 320,
@@ -74,7 +34,7 @@
         zoom: 3,
         pixelArt: true,
         physics: { default: 'arcade', arcade: { gravity: { y: 0 } } },
-        scene: { preload: preload, create: create, update: update }
+        scene: { create: create, update: update } // Preload removed to bypass network loading bugs
     };
 
     const game = new Phaser.Game(config);
@@ -105,27 +65,50 @@
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     ];
 
-    function preload() {
-        // Native asset loading via base64 data strings
-        this.load.image('tileset', tilesetURI);
-        this.load.image('hero', heroURI);
-        this.load.image('btn', btnURI);
-    }
-
     function create() {
         this.input.addPointer(2);
 
-        // Build Map
+        // 1. Generate All Textures Synchronously with ONE Graphics Object
+        const g = this.make.graphics({ x: 0, y: 0, add: false });
+        
+        // Map Tileset Texture (48x16)
+        g.fillStyle(0x388e3c, 1); g.fillRect(0, 0, 16, 16); // Grass
+        g.fillStyle(0x4caf50, 1); g.fillRect(2, 3, 2, 2); g.fillRect(10, 9, 2, 2); g.fillRect(6, 12, 2, 2);
+        g.fillStyle(0x424242, 1); g.fillRect(16, 0, 16, 16); // Wall
+        g.fillStyle(0x757575, 1); g.fillRect(17, 1, 14, 6); g.fillRect(17, 8, 6, 7); g.fillRect(24, 8, 7, 7);
+        g.fillStyle(0x795548, 1); g.fillRect(32, 0, 16, 16); // Path
+        g.fillStyle(0x5d4037, 1); g.fillRect(34, 4, 2, 2); g.fillRect(42, 10, 2, 2); g.fillRect(38, 13, 2, 2);
+        g.generateTexture('tileset', 48, 16);
+        
+        g.clear(); // CRITICAL: Clear memory before drawing the next texture
+
+        // Hero Sprite Texture (16x16)
+        g.fillStyle(0xff1744, 1); g.fillRect(2, 0, 12, 5);  // Bright Red Hat
+        g.fillStyle(0xffea00, 1); g.fillRect(3, 4, 10, 5);  // Yellow Face
+        g.fillStyle(0x000000, 1); g.fillRect(4, 6, 2, 2); g.fillRect(10, 6, 2, 2); // Eyes
+        g.fillStyle(0xffffff, 1); g.fillRect(2, 9, 12, 4);  // White Shirt
+        g.fillStyle(0x2979ff, 1); g.fillRect(3, 13, 4, 3); g.fillRect(9, 13, 4, 3); // Blue Legs
+        g.generateTexture('hero', 16, 16);
+        
+        g.clear();
+
+        // UI Touch Button Texture (32x32)
+        g.fillStyle(0xffffff, 0.4); g.fillRect(0, 0, 32, 32);
+        g.lineStyle(2, 0xffffff, 1); g.strokeRect(1, 1, 30, 30);
+        g.generateTexture('btn', 32, 32);
+        
+        g.destroy(); // Cleanup
+
+        // 2. Build Map
         const map = this.make.tilemap({ data: mapGrid, tileWidth: 16, tileHeight: 16 });
         const tileset = map.addTilesetImage('tileset');
         layer = map.createLayer(0, tileset, 0, 0);
-        map.setCollision(1);
+        map.setCollision(1); // Set walls to solid
 
-        // Spawn Hero on dirt path at position (40, 40)
+        // 3. Spawn Hero
         player = this.physics.add.sprite(40, 40, 'hero');
         player.setCollideWorldBounds(true);
         player.setDepth(100);
-        
         player.body.setSize(12, 12);
         player.body.setOffset(2, 4);
 
@@ -153,13 +136,10 @@
             btn.setAlpha(0.5);
         }
 
-        // Virtual D-Pad (Bottom-Left)
         makeBtn(45, 175, '▲', () => touchUp = true, () => touchUp = false);
         makeBtn(45, 215, '▼', () => touchDown = true, () => touchDown = false);
         makeBtn(20, 195, '◄', () => touchLeft = true, () => touchLeft = false);
         makeBtn(70, 195, '►', () => touchRight = true, () => touchRight = false);
-
-        // Action Button (Bottom-Right)
         makeBtn(285, 195, 'A', () => console.log('Action A Pressed'), () => {});
     }
 
